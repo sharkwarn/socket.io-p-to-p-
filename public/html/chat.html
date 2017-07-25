@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>chat</title>
+  <script type="text/javascript" src="/js/jquery-3.2.1.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+  <script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+  <style>
+    *{
+      margin:0;
+      padding:0;
+    }
+    html,body{
+      width:100%;
+      height:100%;
+      overflow:hidden;
+    }
+    #container{
+      width:100%;
+      height:100%;
+    }
+    #startChat{
+      width: 100%;
+      margin: 200px auto;
+      text-align: center;
+    }
+    .chatContainer{
+      width:100%;
+      height:100%;
+      overflow:hidden;
+      display: none;
+      position: fixed;
+      top:0;
+      left:0;
+    }
+    .userList{
+      width:200px;
+      height:100%;
+      background:#324057;
+      box-sizing: border-box;
+      padding-top:50px;
+    }
+    .userList p{
+      width:100%;
+      height:30px;
+      margin: 0;
+      line-height: 30px;
+      padding: 0 20px;
+      box-sizing: border-box;
+      color: rgba(255,255,255,0.5);
+      border-bottom:1px solid rgba(255,255,255,0.2);
+    }
+    .chatWindow{
+      flex:1;
+      height:100%;
+      background:#F9FAFC;
+    }
+    .chatContent{
+      width:100%;
+      height:80%;
+      overflow: hidden;
+      overflow-y:auto;
+    }
+    .chatEdit{
+      width:100%;
+      height:20%;
+      overflow: hidden;
+      box-sizing: border-box;
+      border-top:1px solid rgba(0, 0, 0,0.5)
+    }
+    .target{
+      width:100%;
+      height:50px;
+      line-height: 30px;
+      box-sizing: border-box;
+      padding:10px 20px;
+      font-size:16px;
+      background: #324057;
+      color:rgba(255,255,255,0.5);
+    }
+    .chatmain{
+      width:100%;
+      height:auto;
+      overflow:hidden;
+      box-sizing: border-box;
+      padding:10px 20px;
+    }
+    .chatmain p {
+      width:100%;
+      height:auto;
+      overflow:hidden;
+      line-height: 30px;
+      color:rgba(0,0,0,0.7);
+      margin-bottom: 15px;
+    }
+  </style>
+</head>
+<body>
+  <div id="container" >
+    
+    <!--弹出框-->
+    <!-- Button trigger modal -->
+    <div id="startChat">
+       <button  type="button" class="btn btn-success btn-lg" data-toggle="modal" data-target="#myModal">
+        开始聊天
+      </button>
+    </div>
+   
+    <br/>
+
+    <!-- Modal -->
+    <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 class="modal-title" id="myModalLabel">请输入你的昵称！</h4>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="exampleInputEmail1">请输入昵称</label>
+              <input id="nickname" type="昵称" class="form-control" id="exampleInputEmail1" placeholder="Email">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button id="confirm" type="button" class="btn btn-default" data-dismiss="modal">开始</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chatContainer">
+      <div class="userList">
+      </div>
+      <div class="chatWindow">
+        <div class="chatContent">
+          <div class="target"></div>
+          <div class="chatmain">
+            <p>小五：福建省电力房间里的司法拘留所</p>
+            <p>小五：福建省电力房间里的司法拘留所</p>
+            <p>小五：福建省电力房间里的司法拘留所</p>
+            <p>小五：福建省电力房间里的司法拘留所</p>
+          </div>
+        </div>
+        <div class="chatEdit">
+          <textarea id="msg" class="form-control" rows="3"></textarea>
+          <div style="width:100%;height:30px;text-align:right;margin-top:10px;box-sizing:border-box;padding-right:100px;">
+            <button id="sendMessage" type="button" class="btn btn-success">发送</button>
+          </div>
+          
+        </div>
+      </div>
+    </div>
+
+
+    <!--<input type="text" id="uid" placeholder="请输入你的昵称。。。。"><br/>
+    <button id="confirm">确定</button>
+
+
+    <input type="text" id="val" />
+    <button id="btn">发送</button>-->
+  </div>
+  
+</body>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  var id =Math.floor(Math.random()*1000000000);
+  var uid = 'uid='+id;
+  var nickname = null;
+  var socket = null;
+  var target = null;
+  var targetName = null;
+
+  document.getElementById('confirm').onclick = function(){
+    if( nickname ){
+     return alert('登录名第一次有效')
+    }
+    $('#startChat').remove();
+
+    $('.chatContainer').css({'display':"flex"})
+
+    nickname = $('#nickname').val();
+
+    nickname = 'nickname='+nickname;
+
+    socket = io('http://192.168.1.24:5000',{'query':uid+"&"+nickname});
+
+    socket.on('connect',function(){
+      socket.emit('roomconnect',{
+        "uid":id,
+        'target':"目标对象",
+        'msg':'发送的消息'
+      });
+    })
+
+    socket.on('broadcast',function(msg){
+      console.log(msg);
+      console.log('有访客登录');
+      var userlist = [];
+      for( var i in msg){
+        userlist.push(
+          '<p data-id="'+i+'">'+msg[i]+'</p>'
+        )
+      }
+      $('.userList').html(userlist.join(''));
+
+      $('.userList p').click(function(){
+        var nickname_1 = $(this).html();
+        var id_1 = $(this).attr('data-id');
+        $('.target').html(nickname_1+'/'+id_1);
+        target = id_1;
+        targetName=nickname_1;
+      })
+    })
+    socket.on('ptp',function(msg){
+      $('.chatmain').prepend('<p>'+msg.nickname+'>>>:'+msg.msg+'</p>')
+    });
+  }
+  // document.getElementById('btn').onclick = function(){
+  //   var val =  document.getElementById('val').value;
+  //   console.log(val);
+    
+  //   socket.emit('ptp', {
+  //     "uid":id,
+  //     'target':"目标对象",
+  //     'msg':val
+  //   });
+  // }
+  $('#sendMessage').click(function(){
+    if( !target ){
+      return alert('请先选择接收人！')
+    }
+    var msg = $('#msg').val();
+    if( !msg ){
+      return alert('请填写发送内容！');
+    }
+    console.log(msg);
+    socket.emit('ptp',{
+      "uid":id,
+      'target':target,
+      'msg':msg,
+      'nickname':targetName,
+    })
+  })
+
+  
+</script>
+</html>
