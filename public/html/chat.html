@@ -88,14 +88,55 @@
       box-sizing: border-box;
       padding:10px 20px;
     }
-    .chatmain p {
+    .chatmain .msg_list {
       width:100%;
       height:auto;
       overflow:hidden;
-      line-height: 30px;
       color:rgba(0,0,0,0.7);
       margin-bottom: 15px;
+      display: flex;
     }
+    .msg_list .msg_list_name{
+      width:50px;
+      height:50px;
+      line-height:50px;
+      text-align: center;
+      background:rgb(114,83,52);
+      color: rgba(255,255,255,0.9);
+      border-radius: 100%;
+      font-weight: bold;
+    }
+    .msg_list .msg_list_msg{
+      overflow:hidden;
+      flex:1;
+      height:auto;
+      float:left;
+      box-sizing: border-box;
+      padding:10px 15px;
+    }
+    .msg_content_left{
+      display: inline-block;
+      line-height: 25px;
+      float:left;
+      font-size:13px;
+      border-radius: 5px;
+      box-sizing: border-box;
+      padding:0 10px;
+      color:#fff;
+      background: rgb(69,137,148);
+    }
+    .msg_content_right{
+      display: inline-block;
+      float:right;
+      line-height: 25px;
+      font-size:13px;
+      border-radius: 5px;
+      box-sizing: border-box;
+      padding:0 10px;
+      color:#fff;
+      background: rgb(69,137,148);
+    }
+    
   </style>
 </head>
 <body>
@@ -138,10 +179,7 @@
         <div class="chatContent">
           <div class="target"></div>
           <div class="chatmain">
-            <p>小五：福建省电力房间里的司法拘留所</p>
-            <p>小五：福建省电力房间里的司法拘留所</p>
-            <p>小五：福建省电力房间里的司法拘留所</p>
-            <p>小五：福建省电力房间里的司法拘留所</p>
+
           </div>
         </div>
         <div class="chatEdit">
@@ -185,7 +223,7 @@
 
     nickname = 'nickname='+nickname;
 
-    socket = io('http://192.168.1.24:5000',{'query':uid+"&"+nickname});
+    socket = io('http://localhost:5000',{'query':uid+"&"+nickname});
 
     socket.on('connect',function(){
       socket.emit('roomconnect',{
@@ -196,8 +234,6 @@
     })
 
     socket.on('broadcast',function(msg){
-      console.log(msg);
-      console.log('有访客登录');
       var userlist = [];
       for( var i in msg){
         userlist.push(
@@ -212,22 +248,19 @@
         $('.target').html(nickname_1+'/'+id_1);
         target = id_1;
         targetName=nickname_1;
+        openChat(id_1);
       })
     })
     socket.on('ptp',function(msg){
-      $('.chatmain').prepend('<p>'+msg.nickname+'>>>:'+msg.msg+'</p>')
+      renderMsg('left',{
+        'name':msg.nickname,
+        'msg':msg.msg,
+        'id':msg.uid,
+      })
     });
   }
-  // document.getElementById('btn').onclick = function(){
-  //   var val =  document.getElementById('val').value;
-  //   console.log(val);
-    
-  //   socket.emit('ptp', {
-  //     "uid":id,
-  //     'target':"目标对象",
-  //     'msg':val
-  //   });
-  // }
+  
+  //发送消息，
   $('#sendMessage').click(function(){
     if( !target ){
       return alert('请先选择接收人！')
@@ -236,15 +269,69 @@
     if( !msg ){
       return alert('请填写发送内容！');
     }
-    console.log(msg);
+    //发送到服务器
     socket.emit('ptp',{
       "uid":id,
       'target':target,
       'msg':msg,
       'nickname':targetName,
     })
+    //自己发送消息发送到聊天区域。
+    renderMsg('right',{
+      'name':targetName,
+      'msg':msg,
+      'id':target,
+    })
+    //清空聊天区域
+    $('#msg').val('');
   })
 
+  function renderMsg (type,msg){
+    switch (type){
+      case 'left':
+        var text = [
+          '<div class="msg_list">',
+            '<div class="msg_list_name">'+msg.name+'</div>',
+            '<div class="msg_list_msg">',
+              '<div class="msg_content_'+type+'">',
+                msg.msg,
+              '</div>',
+            '</div>',
+          '</div>',
+        ];
+        break;
+      case 'right':
+        var text = [
+          '<div class="msg_list">',
+            '<div class="msg_list_msg">',
+              '<div class="msg_content_'+type+'">',
+                msg.msg,
+              '</div>',
+            '</div>',
+            '<div class="msg_list_name">'+msg.name+'</div>',
+          '</div>',
+        ];
+    }
+    //将消息发送到聊天区域
+    $('#target_'+msg.id+' .chatmain').prepend(text.join(''));
+  }
+
+  function openChat(targetid){
+    if( $('#target_'+targetid).length == 0 ){
+      var text = [
+        '<div class="chatContent" id="target_'+targetid+'">',
+          '<div class="target"></div>',
+          '<div class="chatmain">',
+          '</div>',
+        '</div>',
+      ];
+      $('.chatWindow').prepend(text.join(''));
+      $('.chatContent').css('display','none');
+      $('#target_'+targetid).css('display','block');
+    }
+    $('.chatContent').css('display','none');
+    $('#target_'+targetid).css('display','block');
+  }
   
 </script>
 </html>
